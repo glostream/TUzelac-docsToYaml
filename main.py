@@ -1,7 +1,4 @@
-import re
-import json
-from xml.dom.minidom import Document
-import yaml
+import re, json, yaml
 import os.path
 
 from google.auth.transport.requests import Request
@@ -58,6 +55,7 @@ def get_document_ids(drive):
         results = (
             drive.files()
             .list(
+                # only get files of google doc type
                 q=f"'{FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.document'",
                 pageSize=10,
             )
@@ -131,21 +129,20 @@ def parse(document):
     # choices are marked by all caps
     parsed["choices"] = []
     for ix, i in enumerate(i_choices[:-1]):
-        choice = {'text': '', 'days': '', "outcomes": []}
-        if 'DAYS' in lines[i]:
+        choice = {"text": "", "days": "", "outcomes": []}
+        if "DAYS" in lines[i]:
             # days may not be specified
             choice["text"] = lines[i].split(" (")[0]
             choice["days"] = int(lines[i].split(" (")[1].replace(" DAYS)", ""))
         else:
-            choice['text'] = lines[i]
+            choice["text"] = lines[i]
         for lix, l in enumerate(lines[i : i_choices[ix + 1]]):
             # outcomes begin with a percentage chance followed by single comment
             if re.search(r"\d*%", l.split()[0]):
-                outcome = {'text': l, 'comment': lines[i + lix + 1]}
-                choice['outcomes'].append(outcome)
+                outcome = {"comment": l, "text": lines[i + lix + 1]}
+                choice["outcomes"].append(outcome)
         parsed["choices"].append(choice)
 
-    print(json.dumps(parsed, indent=2))
     return parsed
 
 
@@ -161,9 +158,10 @@ def main():
 
     for d in docs_data:
         parsed = parse(d)
-        parsed = json.loads(json.dumps(parsed).replace('\\n', '').replace('\\u000b', ''))
-        # print(parsed)
-        with open(f"{d['title'].replace(' ', '')}.yml", 'w') as yaml_out:
+        parsed = json.loads(
+            json.dumps(parsed).replace("\\n", "").replace("\\u000b", "")
+        )
+        with open(f"{d['title'].replace(' ', '')}.yml", "w") as yaml_out:
             yaml.dump(parsed, yaml_out, sort_keys=False)
 
 
