@@ -1,9 +1,7 @@
 def process(document):
+    # transform json document elements into array of lines of text
     body = document["body"]
 
-    # print(body)
-
-    # transform json document elements into array of lines of text
     lines = []
     for p in body["content"]:
         if "paragraph" in p:
@@ -48,11 +46,9 @@ def get_picture(lines):
 def get_i_choices(lines, i_pic_end):
     i_choices = []
     for lix, l in enumerate(lines[i_pic_end + 1 :]):
-        # l = l["text"]
         if not l["text"].split():
             continue
         if l["style"] == "HEADING_4" and not l["bullet"]:
-            # print(l)
             # first word is all caps indicating a choice
             i_choices.append(lix + i_pic_end + 1)
 
@@ -73,9 +69,7 @@ def get_choices(lines, i_choices):
 
         # get outcomes
         outcome = {}
-        # print(i_choices)
         for lix, l in enumerate(lines[i : i_choices[ix + 1]]):
-            # print(l)
             if l["indent"] == 1:
                 # comment
                 if l["bullet"]:
@@ -90,9 +84,9 @@ def get_choices(lines, i_choices):
                     # start of text
                     k1, k2 = "POST-MISSION-FAILED:", "POST-MISSION:"
                     if k1 in l["text"]:
-                        outcome["post-mission-failed"] = l["text"].replace(k1, '')
+                        outcome["post-mission-failed"] = l["text"].replace(k1, "")
                     elif k2 in l["text"]:
-                        outcome["post-mission"] = l["text"].replace(k2, '')
+                        outcome["post-mission"] = l["text"].replace(k2, "")
                     else:
                         outcome["text"] = l["text"]
                 else:
@@ -113,8 +107,6 @@ def parse(document):
     except Exception as e:
         print(e)
         return
-
-    # print(lines)
 
     picture, i_pic_end = get_picture(lines)
     parsed["picture"] = picture

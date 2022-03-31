@@ -1,43 +1,46 @@
 from src import api
 from src import parser
-import yaml
+import yaml, os
 
 from googleapiclient.discovery import build
 
-# If modifying these scopes, delete the file token.json.
-SCOPES = [
-    "https://www.googleapis.com/auth/drive.metadata.readonly",
-    "https://www.googleapis.com/auth/documents.readonly",
-]
-# FOLDER_ID = "1zCCZxTIyigqkixHQtt4euLyfAC_p9Hyb" # test 1
-FOLDER_ID = "1G1kgyyXNRQucc6zyh6rIV_0LfX-HwDV5"  # test 2
+KEYS = {"token": "keys/token.json", "credentials": "keys/credentials.json"}
+# ID of the folder on Google drive containing the documents
+FOLDER_ID = "1G1kgyyXNRQucc6zyh6rIV_0LfX-HwDV5"  # Events
+OUTPUT_PATH = "out/"
+
+
+def parse_documents(docs_data):
+    if not os.path.exists(OUTPUT_PATH):
+        os.mkdir(OUTPUT_PATH)
+
+    for d in docs_data[::-1]:
+        print(d["title"])
+        try:
+            parsed = parser.parse(d)
+        except:
+            print("ERROR: could not parse document")
+            continue
+        if not parsed:
+            continue
+        path = f"{OUTPUT_PATH}/{d['title'].replace(' ', '')}.yml"
+        with open(path, "w") as yaml_out:
+            yaml.dump(parsed, yaml_out, sort_keys=False)
 
 
 def main():
-    print("Authenticating...")
-    creds = api.authenticate(SCOPES)
-
+    creds = api.authenticate(KEYS)
     drive_service = build("drive", "v3", credentials=creds)
     docs_service = build("docs", "v1", credentials=creds)
 
-    print("\nGetting document metadata...")
+    print("Getting document metadata...")
     items = api.get_document_ids(drive_service, FOLDER_ID)
 
     print("\nReading documents...")
-    docs_data = api.get_documents(docs_service, items)
+    docs_data = api.read_documents(docs_service, items)
 
     print("\nParsing...")
-    for d in docs_data[::-1]:
-        # if d["title"] != "The Umbrella Man":  # document is temporarily bugged
-        #     continue
-        print(d["title"])
-        parsed = parser.parse(d)
-        if not parsed:
-            continue
-        out_path = f"out/{d['title'].replace(' ', '')}.yml"
-        with open(out_path, "w") as yaml_out:
-            yaml.dump(parsed, yaml_out, sort_keys=False)
-        # break
+    parse_documents(docs_data)
 
     print("\nComplete!")
 
